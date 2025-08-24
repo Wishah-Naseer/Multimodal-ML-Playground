@@ -1,0 +1,9 @@
+# Core ML dependencies
+transformers>=4.30.0
+torch>=2.0.0
+torchvision>=0.15.0
+pillow>=9.0.0
+numpy>=1.21.0
+
+# HTTP requests for Ollama API
+requests>=2.25.0 
