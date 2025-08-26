@@ -1,3 +1,25 @@
+import json, os
+from typing import Any, Tuple
+from PIL import Image
+
+def save_detections_json(
+    image_path: str,
+    detections: list[dict[str, Any]],
+    image_size: Tuple[int, int],
+    save_path: str,
+    extra: dict | None = None
+) -> None:
+    payload = {
+        "image": os.path.basename(image_path),
+        "image_size": [int(image_size[0]), int(image_size[1])],
+        "detections": detections,  # [{"box":[x1,y1,x2,y2], "label": <str|int|None>, "score": <float|None>}, ...]
+        "meta": extra or {},
+    }
+    os.makedirs(os.path.dirname(save_path) or ".", exist_ok=True)
+    with open(save_path, "w", encoding="utf-8") as f:
+        json.dump(payload, f, indent=2)
+
+
 import json
 import re
 import requests
@@ -140,8 +162,92 @@ if __name__ == "__main__":
     if res["json"]:
         try:
             parsed = json.loads(res["json"])
-            print(json.dumps(parsed, indent=2))
+            print(json.dumps(parsed, indent=1))
         except Exception:
             print(res["json"])
     else:
         print(res["raw"])
+    
+    # --- Build detections in the same schema as the local script ---
+        # --- Normalize Ollama response -> detections (robust to different shapes) ---
+    if not res["json"]:
+        print("[WARN] Ollama returned no JSON. Raw content follows:\n", res["raw"])
+        exit(0)
+
+    try:
+        parsed = json.loads(res["json"])
+    except Exception as e:
+        print("[ERR] Failed to parse Ollama JSON:", e)
+        print("Raw content:\n", res["raw"][:1000])
+        exit(1)
+
+    def _first_numeric_key(d: dict) -> str | None:
+        keys = [k for k in d.keys() if isinstance(k, str) and k.isdigit()]
+        return str(min(map(int, keys))) if keys else None
+
+    def _extract_vision_block(obj: Any) -> dict | None:
+        # A) {"index": 0, "result": {...}}
+        if isinstance(obj, dict) and "result" in obj and isinstance(obj["result"], dict) and "boxes" in obj["result"]:
+            return obj["result"]
+        # B) {"0": {...}}
+        if isinstance(obj, dict):
+            k = _first_numeric_key(obj)
+            if k and isinstance(obj[k], dict) and "boxes" in obj[k]:
+                return obj[k]
+            # C) direct {"boxes":[...]}
+            if "boxes" in obj:
+                return obj
+        # D) list of items
+        if isinstance(obj, list):
+            for it in obj:
+                vb = _extract_vision_block(it)
+                if vb is not None:
+                    return vb
+        return None
+
+    img_path = "bus.jpg"
+    W, H = Image.open(img_path).convert("RGB").size
+
+    vision = _extract_vision_block(parsed)
+    if vision is None:
+        print("[WARN] Could not find 'boxes' in Ollama response; saving empty detections.")
+        dets = []
+    else:
+        raw_boxes  = vision.get("boxes", []) or []
+        raw_labels = vision.get("labels", []) or []
+        raw_scores = vision.get("scores", []) or []
+
+        # sanitize boxes: must be list-like with at least 4 numbers; slice extras, fix order, clamp to image
+        clean_boxes: list[list[float]] = []
+        for b in raw_boxes:
+            if not isinstance(b, (list, tuple)) or len(b) < 4:
+                continue
+            x1, y1, x2, y2 = [float(v) for v in b[:4]]  # slice in case len>4
+            if x2 < x1: x1, x2 = x2, x1
+            if y2 < y1: y1, y2 = y2, y1
+            x1 = max(0.0, min(x1, W - 1.0))
+            x2 = max(0.0, min(x2, W - 1.0))
+            y1 = max(0.0, min(y1, H - 1.0))
+            y2 = max(0.0, min(y2, H - 1.0))
+            clean_boxes.append([x1, y1, x2, y2])
+
+        dets: list[dict[str, Any]] = []
+        for i, box in enumerate(clean_boxes):
+            label = raw_labels[i] if i < len(raw_labels) else None
+            score = raw_scores[i] if i < len(raw_scores) else None
+            try:
+                score = float(score) if score is not None else None
+            except Exception:
+                score = None
+            dets.append({"box": box, "label": label, "score": score})
+
+    save_detections_json(
+        image_path=img_path,
+        detections=dets,
+        image_size=(W, H),
+        save_path="detections/online_bus.json",
+        extra={"source": "multi_features_ollama_qwen2_5vl.py"}
+    )
+    print(f"Saved detections to detections/online_bus.json ({len(dets)} boxes)")
+    if dets:
+        print("First box:", dets[0])

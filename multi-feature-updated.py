@@ -1,3 +1,41 @@
+import json
+import os
+from dataclasses import asdict, dataclass
+from typing import Tuple
+
+@dataclass
+class Detection:
+    box: Tuple[float, float, float, float]  # [x1, y1, x2, y2]
+    label: int
+    score: float
+
+def save_detections_json(
+    image_path: str,
+    detections: list[Detection],
+    image_size: Tuple[int, int],
+    save_path: str,
+    extra: dict | None = None
+) -> None:
+    """
+    Save detections to JSON:
+    {
+      "image": "bus.jpg",
+      "image_size": [W, H],
+      "detections": [{"box":[x1,y1,x2,y2], "label": 5, "score": 0.98}, ...],
+      "meta": {...}   # optional
+    }
+    """
+    payload = {
+        "image": os.path.basename(image_path),
+        "image_size": [int(image_size[0]), int(image_size[1])],
+        "detections": [asdict(d) for d in detections],
+        "meta": extra or {},
+    }
+    os.makedirs(os.path.dirname(save_path) or ".", exist_ok=True)
+    with open(save_path, "w", encoding="utf-8") as f:
+        json.dump(payload, f, indent=2)
+
+
 from transformers import pipeline
 import torch
 import base64
@@ -208,22 +246,67 @@ if __name__ == "__main__":
         {"type": "float",  "value": 2.5},
         {"type": "string", "value": "The capital of France is [MASK]."},
     ]
-
+    
     print("Details:", mm.get_details())
+
+    from pathlib import Path
+    
     preds = mm.predict(features)
+
+    # Keep a reference image on disk for plotting script
+    img_filename = "bus.jpg"  # used by load_bus_image()
+    img_pil = Image.open(img_filename).convert("RGB")
+    W, H = img_pil.size
+
+    # Collect & persist detections for the image feature
+    det_threshold = 0.5
+    detections: list[Detection] = []
 
     for p in preds:
         t = p["input_type"]
         r = p["result"]
+
         if t == "image" and isinstance(r, dict) and all(k in r for k in ("boxes", "labels", "scores")):
-            # Filter detections by confidence threshold
             filtered = [
-                (box, label, score)
+                Detection(tuple(map(float, box)), int(label), float(score))
                 for box, label, score in zip(r["boxes"], r["labels"], r["scores"])
-                if score > 0.5
+                if float(score) > det_threshold
             ]
-            print(f"[{p['index']}] image -> {len(filtered)} detections > 0.5")
-            for box, label, score in filtered[:5]:
-                print(f"  label_id={label}, score={score:.2f}, box={box}")
+            detections.extend(filtered)
+            print(f"[{p['index']}] image -> {len(filtered)} detections > {det_threshold}")
+            # print(f"[{p['index']}] image -> {len(filtered)} detections")
+            for d in filtered[:5]:
+                print(f"  label_id={d.label}, score={d.score:.2f}, box={list(d.box)}")
         else:
             print(f"[{p['index']}] {t} -> {r}")
+
+    # Save detections JSON (e.g., detections/bus.json)
+    json_out = Path("detections") / f"{Path(img_filename).stem}.json"
+    save_detections_json(
+        image_path=img_filename,
+        detections=detections,
+        image_size=(W, H),
+        save_path=str(json_out),
+        extra={"source": "multi-feature-updated.py", "threshold": det_threshold}
+        # extra={"source": "multi-feature-updated.py", "threshold": "None"}
+    )
+    print(f"Saved detections to: {json_out}")
+
+    # print("Details:", mm.get_details())
+    # preds = mm.predict(features)
+
+    # for p in preds:
+    #     t = p["input_type"]
+    #     r = p["result"]
+    #     if t == "image" and isinstance(r, dict) and all(k in r for k in ("boxes", "labels", "scores")):
+    #         # Filter detections by confidence threshold
+    #         filtered = [
+    #             (box, label, score)
+    #             for box, label, score in zip(r["boxes"], r["labels"], r["scores"])
+    #             # if score > 0.5
+    #         ]
+    #         print(f"[{p['index']}] image -> {len(filtered)} detections > 0.5")
+    #         for box, label, score in filtered[:5]:
+    #             print(f"  label_id={label}, score={score:.2f}, box={box}")
+    #     else:
+    #         print(f"[{p['index']}] {t} -> {r}")
