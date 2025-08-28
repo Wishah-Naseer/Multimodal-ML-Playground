@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+# python avg_boxes_per_label.py --json detections\bus.json --out detections\bus_avg.json --score-thres 0.5
 import argparse, json, os
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
