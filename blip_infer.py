@@ -1,4 +1,4 @@
-# save as blip_infer.py and run:  python blip_infer.py --image /path/to/bus.jpg --manifest /path/to/region_manifest.json
+# python blip_infer.py --image /path/to/bus.jpg --manifest /path/to/region_manifest.json
 
 import argparse, json, os, torch
 from PIL import Image
