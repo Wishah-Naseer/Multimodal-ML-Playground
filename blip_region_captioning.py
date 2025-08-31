@@ -1,8 +1,5 @@
 
-# python blip_region_captioning.py \
-#   --image /path/to/bus.jpg \
-#   --ann /path/to/bus_avg.json \
-#   --out_dir ./outputs \
+# python blip_region_captioning.py --image detections/bus.jpg --ann detections/bus_avg.json --out_dir ./outputs \
 #   --label_map_json /path/to/label_map.json \  # optional
 
 """
