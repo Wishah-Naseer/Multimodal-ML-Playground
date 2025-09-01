@@ -1,0 +1,86 @@
+{
+  "image": "4.jpg",
+  "image_width": 225,
+  "image_height": 225,
+  "global_caption": "a view of a busy city street at night",
+  "regions": [
+    {
+      "region_id": 1,
+      "x1": 35,
+      "y1": 39,
+      "x2": 54,
+      "y2": 60,
+      "score": 0.9353869557380676,
+      "label": "9",
+      "class_name": null,
+      "prompt": null,
+      "caption": "a black and white photo of a cross",
+      "crop_path": "crops\\region_1_9.jpg"
+    },
+    {
+      "region_id": 2,
+      "x1": 82,
+      "y1": 56,
+      "x2": 131,
+      "y2": 139,
+      "score": 0.9151573777198792,
+      "label": "77",
+      "class_name": null,
+      "prompt": null,
+      "caption": "this is a chair",
+      "crop_path": "crops\\region_2_77.jpg"
+    },
+    {
+      "region_id": 3,
+      "x1": 1,
+      "y1": 14,
+      "x2": 32,
+      "y2": 44,
+      "score": 0.8683294057846069,
+      "label": "3",
+      "class_name": null,
+      "prompt": null,
+      "caption": "an image of the moon in the night sky",
+      "crop_path": "crops\\region_3_3.jpg"
+    },
+    {
+      "region_id": 4,
+      "x1": 0,
+      "y1": 121,
+      "x2": 16,
+      "y2": 167,
+      "score": 0.8489840626716614,
+      "label": "3",
+      "class_name": null,
+      "prompt": null,
+      "caption": "an airplane is flying through the sky",
+      "crop_path": "crops\\region_4_3.jpg"
+    },
+    {
+      "region_id": 5,
+      "x1": 175,
+      "y1": 139,
+      "x2": 216,
+      "y2": 168,
+      "score": 0.6507224440574646,
+      "label": "3",
+      "class_name": null,
+      "prompt": null,
+      "caption": "a black and white photo of a city at night",
+      "crop_path": "crops\\region_5_3.jpg"
+    },
+    {
+      "region_id": 6,
+      "x1": 1,
+      "y1": 15,
+      "x2": 32,
+      "y2": 43,
+      "score": 0.5010517835617065,
+      "label": "77",
+      "class_name": null,
+      "prompt": null,
+      "caption": "an image of a black hole in the night sky",
+      "crop_path": "crops\\region_6_77.jpg"
+    }
+  ]
+}

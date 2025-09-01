@@ -1,0 +1,60 @@
+{
+  "image": "2.jpg",
+  "image_width": 1024,
+  "image_height": 683,
+  "global_caption": "a man riding a bike on a city street",
+  "regions": [
+    {
+      "region_id": 1,
+      "x1": 261,
+      "y1": 178,
+      "x2": 411,
+      "y2": 525,
+      "score": 0.998896598815918,
+      "label": "1",
+      "class_name": null,
+      "prompt": null,
+      "caption": "a man riding a bike down the street",
+      "crop_path": "crops\\region_1_1.jpg"
+    },
+    {
+      "region_id": 2,
+      "x1": 235,
+      "y1": 340,
+      "x2": 469,
+      "y2": 565,
+      "score": 0.9970455765724182,
+      "label": "2",
+      "class_name": null,
+      "prompt": null,
+      "caption": "a man riding a bike on a city street",
+      "crop_path": "crops\\region_2_2.jpg"
+    },
+    {
+      "region_id": 3,
+      "x1": 376,
+      "y1": 241,
+      "x2": 683,
+      "y2": 399,
+      "score": 0.9946495890617371,
+      "label": "3",
+      "class_name": null,
+      "prompt": null,
+      "caption": "a man riding a bike down a street next to a car",
+      "crop_path": "crops\\region_3_3.jpg"
+    },
+    {
+      "region_id": 4,
+      "x1": 76,
+      "y1": 262,
+      "x2": 117,
+      "y2": 316,
+      "score": 0.9901701807975769,
+      "label": "2",
+      "class_name": null,
+      "prompt": null,
+      "caption": "a man sitting on a chair in front of a window",
+      "crop_path": "crops\\region_4_2.jpg"
+    }
+  ]
+}

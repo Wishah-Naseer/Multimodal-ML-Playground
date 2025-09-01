@@ -107,10 +107,13 @@ def _default_out_path(json_path: str, image_path: str, outdir: str | None) -> st
     base = f"{jstem}_annotated{img_ext}"
     return str(Path(outdir) / base) if outdir else str(Path(image_path).with_name(base))
 
+import glob
+from pathlib import Path
 
 def main():
     ap = argparse.ArgumentParser(description="Plot bounding boxes from one or more JSON files onto their images.")
-    ap.add_argument("--json", required=True, nargs="+", help="One or more detection JSON files.")
+    ap.add_argument("--json", nargs="+", help="One or more detection JSON files. Supports globs like detections/*.json")
+    ap.add_argument("--json-dir", help="Directory containing detection JSON files (processes *.json).")
     ap.add_argument("--image", default=None, help="Optional image path (only valid if a single JSON is provided).")
     ap.add_argument("--out", default=None, help="Output image path (only valid for single JSON).")
     ap.add_argument("--outdir", default=None, help="Output directory when providing multiple JSONs.")
@@ -119,10 +122,42 @@ def main():
     ap.add_argument("--label-map", default=None, help="Optional path to JSON mapping label_id->name.")
     args = ap.parse_args()
 
-    if len(args.json) > 1 and args.image:
+    # --- expand inputs ---
+    json_paths: list[str] = []
+
+    # 1) Accept --json with wildcards on any shell (PowerShell passes them literally)
+    if args.json:
+        for p in args.json:
+            # expand both forward and backslash patterns
+            expanded = glob.glob(p, recursive=False)
+            if expanded:
+                json_paths.extend(expanded)
+            else:
+                # If no match, still try Path in case user passed a concrete file
+                if Path(p).is_file():
+                    json_paths.append(p)
+                else:
+                    # skip silently, or collect for a message
+                    pass
+
+    # 2) Accept --json-dir as a convenience
+    if args.json_dir:
+        d = Path(args.json_dir)
+        if not d.is_dir():
+            raise SystemExit(f"--json-dir '{args.json_dir}' is not a directory.")
+        json_paths.extend(str(p) for p in sorted(d.glob("*.json")))
+
+    # de-dup while preserving order
+    seen = set()
+    json_paths = [p for p in json_paths if not (p in seen or seen.add(p))]
+
+    if not json_paths:
+        raise SystemExit("No JSON files found. Use --json with a glob (e.g., detections/*.json) or --json-dir <folder>.")
+
+    # --- existing validations, but use json_paths instead of args.json ---
+    if len(json_paths) > 1 and args.image:
         raise SystemExit("--image can only be used with a single --json.")
-    if len(args.json) > 1 and args.out and not (args.outdir or os.path.isdir(args.out)):
-        # If user passed --out with multiple JSONs, treat it as a directory if it exists
+    if len(json_paths) > 1 and args.out and not (args.outdir or os.path.isdir(args.out)):
         raise SystemExit("For multiple JSONs, use --outdir to specify an output directory.")
 
     label_map = None
@@ -130,9 +165,9 @@ def main():
         with open(args.label_map, "r", encoding="utf-8") as f:
             label_map = {int(k): v for k, v in json.load(f).items()}
 
-    for jpath in args.json:
+    for jpath in json_paths:
         payload = load_json(jpath)
-        image_path = _resolve_image_path(jpath, payload, args.image if len(args.json) == 1 else None)
+        image_path = _resolve_image_path(jpath, payload, args.image if len(json_paths) == 1 else None)
 
         img = Image.open(image_path).convert("RGB")
         dets = payload.get("detections", [])
@@ -147,7 +182,7 @@ def main():
             label_map=label_map
         )
 
-        if len(args.json) == 1 and args.out:
+        if len(json_paths) == 1 and args.out:
             out_path = args.out
         else:
             out_path = _default_out_path(jpath, image_path, args.outdir)
@@ -155,6 +190,54 @@ def main():
         Path(out_path).parent.mkdir(parents=True, exist_ok=True)
         annotated.save(out_path)
         print(f"Saved: {out_path}")
+
+# def main():
+#     ap = argparse.ArgumentParser(description="Plot bounding boxes from one or more JSON files onto their images.")
+#     ap.add_argument("--json", required=True, nargs="+", help="One or more detection JSON files.")
+#     ap.add_argument("--image", default=None, help="Optional image path (only valid if a single JSON is provided).")
+#     ap.add_argument("--out", default=None, help="Output image path (only valid for single JSON).")
+#     ap.add_argument("--outdir", default=None, help="Output directory when providing multiple JSONs.")
+#     ap.add_argument("--thickness", type=int, default=3, help="Bounding box line thickness.")
+#     ap.add_argument("--hide-labels", action="store_true", help="Do not render labels/scores.")
+#     ap.add_argument("--label-map", default=None, help="Optional path to JSON mapping label_id->name.")
+#     args = ap.parse_args()
+
+#     if len(args.json) > 1 and args.image:
+#         raise SystemExit("--image can only be used with a single --json.")
+#     if len(args.json) > 1 and args.out and not (args.outdir or os.path.isdir(args.out)):
+#         # If user passed --out with multiple JSONs, treat it as a directory if it exists
+#         raise SystemExit("For multiple JSONs, use --outdir to specify an output directory.")
+
+#     label_map = None
+#     if args.label_map:
+#         with open(args.label_map, "r", encoding="utf-8") as f:
+#             label_map = {int(k): v for k, v in json.load(f).items()}
+
+#     for jpath in args.json:
+#         payload = load_json(jpath)
+#         image_path = _resolve_image_path(jpath, payload, args.image if len(args.json) == 1 else None)
+
+#         img = Image.open(image_path).convert("RGB")
+#         dets = payload.get("detections", [])
+#         if not isinstance(dets, list):
+#             raise SystemExit(f"[{jpath}] Invalid JSON: 'detections' must be a list.")
+
+#         annotated = draw_boxes(
+#             img,
+#             detections=dets,
+#             thickness=args.thickness,
+#             show_labels=not args.hide_labels,
+#             label_map=label_map
+#         )
+
+#         if len(args.json) == 1 and args.out:
+#             out_path = args.out
+#         else:
+#             out_path = _default_out_path(jpath, image_path, args.outdir)
+
+#         Path(out_path).parent.mkdir(parents=True, exist_ok=True)
+#         annotated.save(out_path)
+#         print(f"Saved: {out_path}")
 
 
 if __name__ == "__main__":

@@ -1,0 +1,73 @@
+{
+  "image": "6.jpg",
+  "image_width": 200,
+  "image_height": 152,
+  "global_caption": "a desk with a computer and a monitor on it",
+  "regions": [
+    {
+      "region_id": 1,
+      "x1": 57,
+      "y1": 55,
+      "x2": 136,
+      "y2": 108,
+      "score": 0.973868727684021,
+      "label": "72",
+      "class_name": null,
+      "prompt": null,
+      "caption": "a flat screen tv sitting on top of a desk",
+      "crop_path": "crops\\region_1_72.jpg"
+    },
+    {
+      "region_id": 2,
+      "x1": 9,
+      "y1": 122,
+      "x2": 14,
+      "y2": 133,
+      "score": 0.6156716346740723,
+      "label": "84",
+      "class_name": null,
+      "prompt": null,
+      "caption": "an image of a blur background with a blur effect",
+      "crop_path": "crops\\region_2_84.jpg"
+    },
+    {
+      "region_id": 3,
+      "x1": 58,
+      "y1": 57,
+      "x2": 145,
+      "y2": 119,
+      "score": 0.6070876717567444,
+      "label": "73",
+      "class_name": null,
+      "prompt": null,
+      "caption": "a flat screen tv sitting on top of a desk",
+      "crop_path": "crops\\region_3_73.jpg"
+    },
+    {
+      "region_id": 4,
+      "x1": 109,
+      "y1": 106,
+      "x2": 150,
+      "y2": 125,
+      "score": 0.584209680557251,
+      "label": "84",
+      "class_name": null,
+      "prompt": null,
+      "caption": "a black and white cat sitting on top of a table",
+      "crop_path": "crops\\region_4_84.jpg"
+    },
+    {
+      "region_id": 5,
+      "x1": 15,
+      "y1": 123,
+      "x2": 17,
+      "y2": 134,
+      "score": 0.5209460258483887,
+      "label": "84",
+      "class_name": null,
+      "prompt": null,
+      "caption": "a purple and black background with a blur effect",
+      "crop_path": "crops\\region_5_84.jpg"
+    }
+  ]
+}
